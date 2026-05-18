@@ -186,7 +186,7 @@ class ResolveSessionCatalog(val catalogManager: CatalogManager)
       AlterDatabasePropertiesCommand(db, properties)
 
     case SetNamespaceLocation(ResolvedV1Database(db), location) if conf.useV1Command =>
-      if (SparkStringUtils.isEmpty(location)) {
+      if (SparkStringUtils.isEmpty(location) || location.trim.isEmpty) {
         throw QueryExecutionErrors.invalidEmptyLocationError(location)
       }
       AlterDatabaseSetLocationCommand(db, location)
