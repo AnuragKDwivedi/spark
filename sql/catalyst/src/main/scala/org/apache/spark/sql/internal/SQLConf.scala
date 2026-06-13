@@ -1007,7 +1007,7 @@ object SQLConf {
         "equi-joins may require an extra shuffle. If one input is already hash partitioned, " +
         "only the other input may be reshuffled into the null-aware layout, so the pre-shuffled " +
         "input can keep its NULL skew.")
-      .version("4.1.0")
+      .version("4.3.0")
       .withBindingPolicy(ConfigBindingPolicy.SESSION)
       .booleanConf
       .createWithDefault(false)
@@ -2725,8 +2725,8 @@ object SQLConf {
   val ARCHIVE_FORMAT_READER_ENABLED = buildConf("spark.sql.files.archive.reader.enabled")
     .doc("When true, the CSV data source can read tar archives (.tar, .tar.gz, .tgz): each " +
       "archive is read as a single split and its entries are streamed through the CSV parser " +
-      "(never unpacked to disk), as if the entries were separate CSV files. Only the CSV data " +
-      "source supports reading archives.")
+      "(never unpacked to disk), as if the entries were separate CSV files, both during scan " +
+      "and schema inference. Only the CSV data source supports reading archives.")
     .version("5.0.0")
     .withBindingPolicy(ConfigBindingPolicy.SESSION)
     .booleanConf
@@ -3260,7 +3260,8 @@ object SQLConf {
       .doc("When true, streaming sinks can be named using the name() API on DataStreamWriter. " +
         "This enables sink evolution capability where sinks can be changed while maintaining " +
         "a historical record of all sinks used in the checkpoint.")
-      .version("4.1.0")
+      .version("4.3.0")
+      .withBindingPolicy(ConfigBindingPolicy.NOT_APPLICABLE)
       .booleanConf
       .createWithDefault(false)
 
@@ -3823,6 +3824,7 @@ object SQLConf {
     .doc("Decides if we use HashAggregateExec when possible, the rule takes precedence " +
       s"over ${USE_OBJECT_HASH_AGG.key}.")
     .version("4.3.0")
+    .withBindingPolicy(ConfigBindingPolicy.NOT_APPLICABLE)
     .booleanConf
     .createWithDefault(true)
 
@@ -4239,7 +4241,7 @@ object SQLConf {
 
   val WINDOW_SEGMENT_TREE_ENABLED =
     buildConf("spark.sql.window.segmentTree.enabled")
-      .withBindingPolicy(ConfigBindingPolicy.SESSION)
+      .withBindingPolicy(ConfigBindingPolicy.NOT_APPLICABLE)
       .doc("Use block-chunked segment tree for moving aggregate window frames " +
         "whose functions are all DeclarativeAggregate without FILTER/DISTINCT.")
       .version("4.2.0")
@@ -4248,7 +4250,7 @@ object SQLConf {
 
   val WINDOW_SEGMENT_TREE_MIN_PARTITION_ROWS =
     buildConf("spark.sql.window.segmentTree.minPartitionRows")
-      .withBindingPolicy(ConfigBindingPolicy.SESSION)
+      .withBindingPolicy(ConfigBindingPolicy.NOT_APPLICABLE)
       .doc("Minimum partition row count to activate the segment-tree moving frame. " +
         "Partitions smaller than this fall back to the default sliding implementation.")
       .version("4.2.0")
@@ -4259,7 +4261,7 @@ object SQLConf {
 
   val WINDOW_SEGMENT_TREE_BLOCK_SIZE =
     buildConf("spark.sql.window.segmentTree.blockSize")
-      .withBindingPolicy(ConfigBindingPolicy.SESSION)
+      .withBindingPolicy(ConfigBindingPolicy.NOT_APPLICABLE)
       .doc("Block size, in rows, for the block-chunked segment tree used by moving " +
         "window frames. Each leaf of the tree aggregates this many consecutive rows. " +
         "Smaller values reduce per-partition memory and speed up tree build for small " +
@@ -4274,7 +4276,7 @@ object SQLConf {
 
   val WINDOW_SEGMENT_TREE_FANOUT =
     buildConf("spark.sql.window.segmentTree.fanout")
-      .withBindingPolicy(ConfigBindingPolicy.SESSION)
+      .withBindingPolicy(ConfigBindingPolicy.NOT_APPLICABLE)
       .doc("Fanout of internal nodes for the block-chunked segment tree.")
       .version("4.2.0")
       .internal()
@@ -4799,6 +4801,17 @@ object SQLConf {
       .booleanConf
       // show full stacktrace in tests but hide in production by default.
       .createWithDefault(!Utils.isTesting)
+
+  val PYSPARK_TRACEBACK_WITH_LOCALS =
+    buildConf("spark.sql.execution.pyspark.udf.tracebackWithLocals.enabled")
+      .doc(
+        "When true, include the local variables in the traceback from Python UDFs. " +
+        "Note that this config will print the value of every local variable in the call stack, " +
+        "including sensitive data like passwords or API keys. Please use this config with caution.")
+      .version("4.3.0")
+      .withBindingPolicy(ConfigBindingPolicy.SESSION)
+      .booleanConf
+      .createWithDefault(false)
 
   val PYSPARK_ARROW_VALIDATE_SCHEMA =
     buildConf("spark.sql.execution.arrow.pyspark.validateSchema.enabled")
@@ -7446,6 +7459,7 @@ object SQLConf {
         "top-level columns are filled with their default value (or null). This is " +
         "experimental and the semantics may change.")
       .version("4.2.0")
+      .withBindingPolicy(ConfigBindingPolicy.NOT_APPLICABLE)
       .booleanConf
       .createWithDefault(false)
 
@@ -8428,6 +8442,8 @@ class SQLConf extends Serializable with Logging with SqlApiConf {
   def pysparkHideTraceback: Boolean = getConf(PYSPARK_HIDE_TRACEBACK)
 
   def pysparkSimplifiedTraceback: Boolean = getConf(PYSPARK_SIMPLIFIED_TRACEBACK)
+
+  def pysparkTracebackWithLocals: Boolean = getConf(PYSPARK_TRACEBACK_WITH_LOCALS)
 
   def pysparkArrowValidateSchema: Boolean = getConf(PYSPARK_ARROW_VALIDATE_SCHEMA)
 
